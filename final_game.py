@@ -48,9 +48,30 @@ class Unit:
     def draw(self, screen, selected=False):
         if not self.alive:
             return
-        pygame.draw.circle(screen, self.color, (self.point.x, self.point.y), self.point.radius)
-        if selected:
-            pygame.draw.circle(screen, WHITE, (self.point.x, self.point.y), self.point.radius + 3, 2)
+        if self.name == "Gate":
+            pygame.draw.rect(screen, self.color, (self.point.x - self.point.radius - 5, self.point.y - self.point.radius, self.point.radius * 2 + 10, self.point.radius * 2))
+            if selected:
+                pygame.draw.rect(screen, WHITE, (self.point.x - self.point.radius - 8, self.point.y - self.point.radius - 3, self.point.radius * 2 + 16, self.point.radius * 2 + 6), 2)
+        elif self.name == "General":
+            pygame.draw.rect(screen, self.color, (self.point.x - self.point.radius, self.point.y - self.point.radius, self.point.radius * 2, self.point.radius * 2))
+            if selected:
+                pygame.draw.rect(screen, WHITE, (self.point.x - self.point.radius - 3, self.point.y - self.point.radius - 3, self.point.radius * 2 + 6, self.point.radius * 2 + 6), 2)
+        elif self.name == "King":
+            pygame.draw.polygon(screen, self.color, [
+                (self.point.x, self.point.y - self.point.radius),
+                (self.point.x - self.point.radius, self.point.y + self.point.radius),
+                (self.point.x + self.point.radius, self.point.y + self.point.radius)
+            ])
+            if selected:
+                pygame.draw.polygon(screen, WHITE, [
+                    (self.point.x, self.point.y - self.point.radius - 3),
+                    (self.point.x - self.point.radius - 3, self.point.y + self.point.radius + 3),
+                    (self.point.x + self.point.radius + 3, self.point.y + self.point.radius + 3)
+                ], 2)
+        else:
+            pygame.draw.circle(screen, self.color, (self.point.x, self.point.y), self.point.radius)
+            if selected:
+                pygame.draw.circle(screen, WHITE, (self.point.x, self.point.y), self.point.radius + 3, 2)
         hp_width = (self.hp / self.max_hp) * 30
         pygame.draw.rect(screen, RED, (self.point.x - 15, self.point.y - 25, 30, 5))
         pygame.draw.rect(screen, GREEN, (self.point.x - 15, self.point.y - 25, hp_width, 5))
@@ -158,25 +179,25 @@ class Camp:
             positions = [
                 (500, 225),  # Point 0: Gate (顶点)
                 (450, 175), (500, 175), (550, 175),  # Base line
-                (425, 100), (475, 100), (525, 100), (575, 100)
+                (400, 100), (500, 100), (600, 100)   # Bottom line (将军向外扩展，形成三角形)
             ]
         elif self.camp_id == 1:  # Right
             positions = [
                 (775, 400),  # Point 0: Gate (顶点)
                 (825, 350), (825, 400), (825, 450),  # Base line
-                (900, 325), (900, 375), (900, 425), (900, 475)
+                (950, 325), (950, 400), (950, 475)   # Bottom line (将军向外扩展，形成三角形)
             ]
         elif self.camp_id == 2:  # Bottom
             positions = [
                 (500, 575),  # Point 0: Gate (顶点)
                 (450, 625), (500, 625), (550, 625),  # Base line
-                (425, 700), (475, 700), (525, 700), (575, 700)
+                (400, 700), (500, 700), (600, 700)   # Bottom line (将军向外扩展，形成三角形)
             ]
         else:  # Left
             positions = [
                 (225, 400),  # Point 0: Gate (顶点)
                 (175, 350), (175, 400), (175, 450),  # Base line
-                (100, 325), (100, 375), (100, 425), (100, 475)
+                (50, 325), (50, 400), (50, 475)      # Bottom line (将军向外扩展，形成三角形)
             ]
         
         self.points = [Point(x, y) for x, y in positions]
@@ -184,19 +205,21 @@ class Camp:
             (0, 1), (0, 2), (0, 3),
             (1, 2), (2, 3),
             (1, 4), (1, 5),
-            (2, 5), (2, 6),
-            (3, 6), (3, 7),
-            (4, 5), (5, 6), (6, 7)
+            (2, 4), (2, 5), (2, 6),
+            (3, 5), (3, 6),
+            (4, 5), (5, 6)
         ]
 
     def create_units(self):
         self.gate = Unit("Gate", self.points[0].x, self.points[0].y, self.camp_id, hp=20, attack_power=0)
         self.units.append(self.gate)
-        self.units.append(Unit("Soldier", self.points[4].x, self.points[4].y, self.camp_id, hp=3, attack_power=1))
-        self.units.append(Unit("General", self.points[5].x, self.points[5].y, self.camp_id, hp=5, attack_power=2))
-        self.king = Unit("King", self.points[6].x, self.points[6].y, self.camp_id, hp=10, attack_power=1)
+        self.units.append(Unit("Soldier", self.points[1].x, self.points[1].y, self.camp_id, hp=3, attack_power=1))
+        self.units.append(Unit("Soldier", self.points[2].x, self.points[2].y, self.camp_id, hp=3, attack_power=1))
+        self.units.append(Unit("Soldier", self.points[3].x, self.points[3].y, self.camp_id, hp=3, attack_power=1))
+        self.units.append(Unit("General", self.points[4].x, self.points[4].y, self.camp_id, hp=5, attack_power=2))
+        self.king = Unit("King", self.points[5].x, self.points[5].y, self.camp_id, hp=10, attack_power=1)
         self.units.append(self.king)
-        self.units.append(Unit("Soldier", self.points[7].x, self.points[7].y, self.camp_id, hp=3, attack_power=1))
+        self.units.append(Unit("General", self.points[6].x, self.points[6].y, self.camp_id, hp=5, attack_power=2))
 
     def draw(self, screen, selected_unit=None):
         for conn in self.connections:
