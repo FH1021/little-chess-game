@@ -95,13 +95,21 @@ class Unit:
                         elif conn[1] == i:
                             adjacent.append((battlefield.points[conn[0]].x, battlefield.points[conn[0]].y))
                     if i == 1:  # Top side midpoint
-                        adjacent.append((camps[0].points[0].x, camps[0].points[0].y))
+                        adjacent.append((camps[0].points[1].x, camps[0].points[1].y))
+                        adjacent.append((camps[0].points[2].x, camps[0].points[2].y))
+                        adjacent.append((camps[0].points[3].x, camps[0].points[3].y))
                     elif i == 2:  # Right side midpoint
-                        adjacent.append((camps[1].points[0].x, camps[1].points[0].y))
+                        adjacent.append((camps[1].points[1].x, camps[1].points[1].y))
+                        adjacent.append((camps[1].points[2].x, camps[1].points[2].y))
+                        adjacent.append((camps[1].points[3].x, camps[1].points[3].y))
                     elif i == 3:  # Bottom side midpoint
-                        adjacent.append((camps[2].points[0].x, camps[2].points[0].y))
+                        adjacent.append((camps[2].points[1].x, camps[2].points[1].y))
+                        adjacent.append((camps[2].points[2].x, camps[2].points[2].y))
+                        adjacent.append((camps[2].points[3].x, camps[2].points[3].y))
                     elif i == 4:  # Left side midpoint
-                        adjacent.append((camps[3].points[0].x, camps[3].points[0].y))
+                        adjacent.append((camps[3].points[1].x, camps[3].points[1].y))
+                        adjacent.append((camps[3].points[2].x, camps[3].points[2].y))
+                        adjacent.append((camps[3].points[3].x, camps[3].points[3].y))
                     break
             
             for camp in camps:
@@ -119,14 +127,15 @@ class Unit:
                             adjacent.append((camp.points[6].x, camp.points[6].y))
                         elif i == 6:
                             adjacent.append((camp.points[5].x, camp.points[5].y))
-                        if camp.camp_id == 0:
-                            adjacent.append((battlefield.points[1].x, battlefield.points[1].y))
-                        elif camp.camp_id == 1:
-                            adjacent.append((battlefield.points[2].x, battlefield.points[2].y))
-                        elif camp.camp_id == 2:
-                            adjacent.append((battlefield.points[3].x, battlefield.points[3].y))
-                        else:
-                            adjacent.append((battlefield.points[4].x, battlefield.points[4].y))
+                        if i == 1 or i == 2 or i == 3:
+                            if camp.camp_id == 0:
+                                adjacent.append((battlefield.points[1].x, battlefield.points[1].y))
+                            elif camp.camp_id == 1:
+                                adjacent.append((battlefield.points[2].x, battlefield.points[2].y))
+                            elif camp.camp_id == 2:
+                                adjacent.append((battlefield.points[3].x, battlefield.points[3].y))
+                            else:
+                                adjacent.append((battlefield.points[4].x, battlefield.points[4].y))
                         break
         except Exception as e:
             print(f"Get adjacent error: {e}")
@@ -293,14 +302,20 @@ class Game:
         self.skip_button = Button(WIDTH - 150, 10, 140, 50, "Skip Turn", BLACK, WHITE)
 
     def check_game_over(self):
-        for i, camp in enumerate(self.camps):
-            if not camp.king.alive:
-                self.game_over = True
-                for j in range(4):
-                    if self.camps[j].king.alive:
-                        self.winner = j
-                        break
-                return True
+        player_camp = self.camps[0]
+        if not player_camp.king.alive:
+            self.game_over = True
+            self.winner = -1  # -1 表示己方失败
+            return True
+        all_enemy_kings_dead = True
+        for i in range(1, 4):
+            if self.camps[i].king.alive:
+                all_enemy_kings_dead = False
+                break
+        if all_enemy_kings_dead:
+            self.game_over = True
+            self.winner = 0  # 0 表示己方获胜
+            return True
         return False
 
     def find_point_by_coord(self, x, y):
@@ -392,7 +407,18 @@ class Game:
         if not available:
             return False
         
-        unit = random.choice(available)
+        def is_in_camp(coord, camp):
+            for point in camp.points:
+                if point.x == coord[0] and point.y == coord[1]:
+                    return True
+            return False
+        
+        non_king_available = [u for u in available if u.name != "King"]
+        if non_king_available and random.random() < 0.8:
+            unit = random.choice(non_king_available)
+        else:
+            unit = random.choice(available)
+        
         try:
             adjacent = unit.get_adjacent_points(self.camps, self.battlefield)
             
@@ -413,7 +439,14 @@ class Game:
                     valid.append(coord)
             
             if valid:
-                target = random.choice(valid)
+                if unit.name == "King":
+                    in_camp_valid = [coord for coord in valid if is_in_camp(coord, camp)]
+                    if in_camp_valid and random.random() < 0.7:
+                        target = random.choice(in_camp_valid)
+                    else:
+                        target = random.choice(valid)
+                else:
+                    target = random.choice(valid)
                 target_point = self.find_point_by_coord(target[0], target[1])
                 if target_point:
                     unit.move_to(target_point)
@@ -462,8 +495,11 @@ class Game:
         self.skip_button.draw(SCREEN)
         
         if self.game_over:
-            game_over_text = FONT.render(f"Game Over! Faction {self.winner + 1} Wins!", True, RED)
-            SCREEN.blit(game_over_text, (WIDTH // 2 - 170, HEIGHT // 2))
+            if self.winner == 0:
+                game_over_text = FONT.render("Game Over! You Win!", True, RED)
+            else:
+                game_over_text = FONT.render("Game Over! You Lose!", True, RED)
+            SCREEN.blit(game_over_text, (WIDTH // 2 - 120, HEIGHT // 2))
         
         pygame.display.flip()
 
